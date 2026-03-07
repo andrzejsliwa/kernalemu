@@ -43,10 +43,13 @@ test-asm: $(EXECUTABLE)
 	  $(abspath $(EXECUTABLE)) test_drive_asm.prg -drive8 $(TESTDIR) && \
 	  rm -f $(TESTDIR)/*
 
-test-basic: $(EXECUTABLE)
+$(DRIVE_TESTS)/bas_to_prg: $(DRIVE_TESTS)/bas_to_prg.c
+	$(CC) -Wall -o $@ $<
+
+test-basic: $(EXECUTABLE) $(DRIVE_TESTS)/bas_to_prg
 	@mkdir -p $(TESTDIR) && rm -f $(TESTDIR)/*
 	@cd $(DRIVE_TESTS) && \
-	  python3 hatoucan < test_drive.bas > test_drive.prg && \
+	  ./bas_to_prg < test_drive.bas > test_drive.prg && \
 	  $(abspath $(EXECUTABLE)) $(abspath demo/basic2.prg) test_drive.prg \
 	    -drive8 $(TESTDIR) -startind 0xa000 -autorun && \
 	  rm -f $(TESTDIR)/*

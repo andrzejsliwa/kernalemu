@@ -17,7 +17,7 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt-get update -q
-          sudo apt-get install -y 64tass python3
+          sudo apt-get install -y 64tass
 
       - name: Build kernalemu
         run: make
@@ -35,7 +35,8 @@ jobs:
       - name: Run BASIC test suite
         run: |
           cd drive-tests
-          python3 hatoucan < test_drive.bas > test_drive.prg
+          cc -Wall -o bas_to_prg bas_to_prg.c
+          ./bas_to_prg < test_drive.bas > test_drive.prg
           ../build/kernalemu \
             ../demo/basic2.prg test_drive.prg \
             -drive8 /tmp/ke_test \
