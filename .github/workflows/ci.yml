@@ -1,0 +1,43 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update -q
+          sudo apt-get install -y 64tass python3
+
+      - name: Build kernalemu
+        run: make
+
+      - name: Prepare test drive directory
+        run: mkdir -p /tmp/ke_test
+
+      - name: Run assembly test suite
+        run: |
+          cd drive-tests
+          64tass --cbm-prg -o test_drive_asm.prg test_drive_asm.asm
+          ../build/kernalemu test_drive_asm.prg -drive8 /tmp/ke_test
+          rm -f /tmp/ke_test/*
+
+      - name: Run BASIC test suite
+        run: |
+          cd drive-tests
+          python3 hatoucan < test_drive.bas > test_drive.prg
+          ../build/kernalemu \
+            ../demo/basic2.prg test_drive.prg \
+            -drive8 /tmp/ke_test \
+            -startind 0xa000 \
+            -autorun

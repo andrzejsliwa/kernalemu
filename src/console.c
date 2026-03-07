@@ -6,6 +6,7 @@
 
 #include <stdlib.h>
 #include <stdio.h>
+#include <stdbool.h>
 
 #ifdef _WIN32
 #include <windows.h>
@@ -20,6 +21,18 @@ static int get_console_info(HANDLE *h, COORD *pos, DWORD *size) {
     *pos = info.dwCursorPosition;
     *size = (DWORD)info.dwSize.X * info.dwSize.Y;
     return 0;
+}
+#else /* POSIX */
+#include <unistd.h>
+/* Only emit ANSI escapes when stdout is a real terminal */
+static bool tty_output_checked = false;
+static bool tty_output         = false;
+static bool is_tty(void) {
+    if (!tty_output_checked) {
+        tty_output         = isatty(fileno(stdout));
+        tty_output_checked = true;
+    }
+    return tty_output;
 }
 #endif /* _WIN32 */
 
@@ -36,7 +49,7 @@ void clear_screen() {
   FillConsoleOutputCharacter(hstd_out, ' ', size, upper_left, &dummy2);
   SetConsoleCursorPosition(hstd_out, upper_left);
 #else /* ANSI */
-  fputs("\033[2J\033[;H", stdout);
+  if (is_tty()) fputs("\033[2J\033[;H", stdout);
 #endif /* _WIN32 */
 }
 
@@ -52,7 +65,7 @@ void up_cursor() {
   --pos.Y;
   SetConsoleCursorPosition(hstd_out, pos);
 #else /* ANSI */
-  fputs("\033[A", stdout);
+  if (is_tty()) fputs("\033[A", stdout);
 #endif /* _WIN32 */
 }
 
@@ -68,7 +81,7 @@ void down_cursor() {
   ++pos.Y;
   SetConsoleCursorPosition(hstd_out, pos);
 #else /* ANSI */
-  fputs("\033[B", stdout);
+  if (is_tty()) fputs("\033[B", stdout);
 #endif /* _WIN32 */
 }
 
@@ -84,7 +97,7 @@ void left_cursor() {
   --pos.X;
   SetConsoleCursorPosition(hstd_out, pos);
 #else /* ANSI */
-  fputs("\033[D", stdout);
+  if (is_tty()) fputs("\033[D", stdout);
 #endif /* _WIN32 */
 }
 
@@ -100,7 +113,7 @@ void right_cursor() {
   ++pos.X;
   SetConsoleCursorPosition(hstd_out, pos);
 #else /* ANSI */
-  fputs("\033[C", stdout);
+  if (is_tty()) fputs("\033[C", stdout);
 #endif /* _WIN32 */
 }
 
@@ -116,7 +129,7 @@ void move_cursor(int x, int y) {
 
   SetConsoleCursorPosition(hstd_out, pos);
 #else /* ANSI */
-  printf("\033[%d;%df", y, x);
+  if (is_tty()) printf("\033[%d;%df", y, x);
 #endif /* _WIN32 */
 }
 

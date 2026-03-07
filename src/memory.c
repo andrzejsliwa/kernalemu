@@ -29,7 +29,7 @@ write6502(uint16_t address, uint8_t value)
 
 // RAMTAS - Perform RAM test
 void
-RAMTAS()
+RAMTAS(void)
 {
 	switch (machine) {
 		case MACHINE_PET:
@@ -66,7 +66,7 @@ RAMTAS()
 
 // MEMTOP - Read/set the top of memory
 void
-MEMTOP()
+MEMTOP(void)
 {
 	if (status & 1) {
 		x = ram_top & 0xFF;
@@ -78,7 +78,7 @@ MEMTOP()
 
 // MEMBOT - Read/set the bottom of memory
 void
-MEMBOT()
+MEMBOT(void)
 {
 	if (status & 1) {
 		x = ram_bot & 0xFF;

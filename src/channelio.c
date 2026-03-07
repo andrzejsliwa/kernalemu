@@ -15,22 +15,6 @@
 #define MIN(a,b) (((a)<(b))?(a):(b))
 #define MAX(a,b) (((a)>(b))?(a):(b))
 
-#define KERN_DEVICE_KEYBOARD  0
-#define KERN_DEVICE_CASSETTE  1
-#define KERN_DEVICE_RS232     2
-#define KERN_DEVICE_SCREEN    3
-#define KERN_DEVICE_PRINTERU4 4
-#define KERN_DEVICE_PRINTERU5 5
-#define KERN_DEVICE_PRINTERU6 6
-#define KERN_DEVICE_PRINTERU7 7
-#define KERN_DEVICE_DRIVEU8   8
-#define KERN_DEVICE_DRIVEU9   9
-#define KERN_DEVICE_DRIVEU10  10
-#define KERN_DEVICE_DRIVEU11  11
-#define KERN_DEVICE_DRIVEU12  12
-#define KERN_DEVICE_DRIVEU13  13
-#define KERN_DEVICE_DRIVEU14  14
-#define KERN_DEVICE_DRIVEU15  15
 
 uint8_t kernal_msgflag;
 uint8_t *STATUS_p;
@@ -42,7 +26,12 @@ uint8_t DFLTN = KERN_DEVICE_KEYBOARD;
 
 #define STATUS (*STATUS_p)
 
-uint8_t file_to_device[] = { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF };
+/* 256 entries - one per possible LFN (SETLFS accepts uint8_t 0-255) */
+#define X16  0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF
+#define X256 X16,X16,X16,X16,X16,X16,X16,X16,X16,X16,X16,X16,X16,X16,X16,X16
+uint8_t file_to_device[256] = { X256 };
+#undef X16
+#undef X256
 
 void
 channelio_init()
@@ -53,7 +42,7 @@ channelio_init()
 
 // SETMSG - Control KERNAL messages
 void
-SETMSG()
+SETMSG(void)
 {
 	// TODO: Act on kernal_msgflag
 	kernal_msgflag = a;
@@ -62,14 +51,14 @@ SETMSG()
 
 // READST - Read I/O status word
 void
-READST()
+READST(void)
 {
 	a = STATUS;
 }
 
 // SETLFS - Set logical, first, and second addresses
 void
-SETLFS()
+SETLFS(void)
 {
 	LA = a;
 	FA = x;
@@ -78,7 +67,7 @@ SETLFS()
 
 // SETNAM - Set file name
 void
-SETNAM()
+SETNAM(void)
 {
 	FNADR = x | y << 8;
 	FNLEN = a;
@@ -86,7 +75,7 @@ SETNAM()
 
 // OPEN - Open a logical file
 void
-OPEN()
+OPEN(void)
 {
 	STATUS = 0;
 	if (file_to_device[LA] != 0xFF) {
@@ -95,11 +84,10 @@ OPEN()
 		return;
 	}
 
-	char filename[41];
+	char filename[256];
 	uint8_t len = MIN(FNLEN, sizeof(filename) - 1);
-	memcpy(filename, (char *)&RAM[FNADR], FNLEN);
+	memcpy(filename, (char *)&RAM[FNADR], len);
 	filename[len] = 0;
-//	printf("OPEN %d,%d,%d,\"%s\"\n", LA, FA, SA, filename);
 
 	switch (FA) {
 		case KERN_DEVICE_SCREEN:
@@ -110,47 +98,27 @@ OPEN()
 		case KERN_DEVICE_RS232:
 			a = KERN_ERR_DEVICE_NOT_PRESENT;
 			break;
-		case KERN_DEVICE_PRINTERU4:
-			printer_open(4);
-			a = KERN_ERR_NONE;
-			break;
-		case KERN_DEVICE_PRINTERU5:
-			printer_open(5);
-			a = KERN_ERR_NONE;
-			break;
-		case KERN_DEVICE_PRINTERU6:
-			printer_open(6);
-			a = KERN_ERR_NONE;
-			break;
-		case KERN_DEVICE_PRINTERU7:
-			printer_open(7);
-			a = KERN_ERR_NONE;
-			break;
-		case KERN_DEVICE_DRIVEU8:
-		case KERN_DEVICE_DRIVEU9:
-		case KERN_DEVICE_DRIVEU10:
-		case KERN_DEVICE_DRIVEU11:
-		case KERN_DEVICE_DRIVEU12:
-		case KERN_DEVICE_DRIVEU13:
-		case KERN_DEVICE_DRIVEU14:
-		case KERN_DEVICE_DRIVEU15:
-			a = cbmdos_open(LA, FA, SA, filename);
+		default:
+			if (is_printer_device(FA)) {
+				printer_open(FA);
+				a = KERN_ERR_NONE;
+			} else if (is_drive_device(FA)) {
+				a = cbmdos_open(LA, FA, SA, filename);
+			}
 			break;
 	}
 
 	if (a == KERN_ERR_NONE) {
 		file_to_device[LA] = FA;
 	}
-//	printf("file_to_device[%d] = %d\n", LA, FA);
 	set_c(a != KERN_ERR_NONE);
 }
 
 // CLOSE - Close a specified logical file
 void
-CLOSE()
+CLOSE(void)
 {
 	uint8_t dev = file_to_device[a];
-//	printf("CLOSE %d,%d\n", a, dev);
 	if (dev == 0xFF) {
 		set_c(1);
 		a = KERN_ERR_FILE_NOT_OPEN;
@@ -164,32 +132,14 @@ CLOSE()
 		case KERN_DEVICE_SCREEN:
 			set_c(0);
 			return;
-		case KERN_DEVICE_PRINTERU4:
-			printer_close(4);
-			a = KERN_ERR_NONE;
-			break;
-		case KERN_DEVICE_PRINTERU5:
-			printer_close(5);
-			a = KERN_ERR_NONE;
-			break;
-		case KERN_DEVICE_PRINTERU6:
-			printer_close(6);
-			a = KERN_ERR_NONE;
-			break;
-		case KERN_DEVICE_PRINTERU7:
-			printer_close(7);
-			a = KERN_ERR_NONE;
-			break;
-		case KERN_DEVICE_DRIVEU8:
-		case KERN_DEVICE_DRIVEU9:
-		case KERN_DEVICE_DRIVEU10:
-		case KERN_DEVICE_DRIVEU11:
-		case KERN_DEVICE_DRIVEU12:
-		case KERN_DEVICE_DRIVEU13:
-		case KERN_DEVICE_DRIVEU14:
-		case KERN_DEVICE_DRIVEU15:
-			cbmdos_close(a, dev);
-			set_c(0);
+		default:
+			if (is_printer_device(dev)) {
+				printer_close(dev);
+				a = KERN_ERR_NONE;
+			} else if (is_drive_device(dev)) {
+				cbmdos_close(a, dev);
+				set_c(0);
+			}
 			break;
 	}
 
@@ -198,10 +148,9 @@ CLOSE()
 
 // CHKIN - Open channel for input
 void
-CHKIN()
+CHKIN(void)
 {
 	uint8_t dev = file_to_device[x];
-//	printf("CHKIN %d (dev %d)\n", x, dev);
 	if (dev == 0xFF) {
 		DFLTN = KERN_DEVICE_KEYBOARD;
 		set_c(1);
@@ -220,16 +169,12 @@ CHKIN()
 		case KERN_DEVICE_PRINTERU7:
 			set_c(0);
 			break;
-		case KERN_DEVICE_DRIVEU8:
-		case KERN_DEVICE_DRIVEU9:
-		case KERN_DEVICE_DRIVEU10:
-		case KERN_DEVICE_DRIVEU11:
-		case KERN_DEVICE_DRIVEU12:
-		case KERN_DEVICE_DRIVEU13:
-		case KERN_DEVICE_DRIVEU14:
-		case KERN_DEVICE_DRIVEU15:
-			cbmdos_chkin(x, dev);
-			set_c(0);
+		default:
+			if (is_drive_device(dev)) {
+				cbmdos_chkin(x, dev);
+				set_c(0);
+				break;
+			}
 			break;
 	}
 	DFLTN = dev;
@@ -237,10 +182,9 @@ CHKIN()
 
 // CHKOUT - Open channel for output
 void
-CHKOUT()
+CHKOUT(void)
 {
 	uint8_t dev = file_to_device[x];
-//	printf("CHKOUT %d (dev %d)\n", x, dev);
 	if (dev == 0xFF) {
 		DFLTO = KERN_DEVICE_SCREEN;
 		set_c(1);
@@ -259,41 +203,81 @@ CHKOUT()
 		case KERN_DEVICE_PRINTERU7:
 			set_c(0);
 			break;
-		case KERN_DEVICE_DRIVEU8:
-		case KERN_DEVICE_DRIVEU9:
-		case KERN_DEVICE_DRIVEU10:
-		case KERN_DEVICE_DRIVEU11:
-		case KERN_DEVICE_DRIVEU12:
-		case KERN_DEVICE_DRIVEU13:
-		case KERN_DEVICE_DRIVEU14:
-		case KERN_DEVICE_DRIVEU15:
-			cbmdos_chkout(x, dev);
-			set_c(0);
+		default:
+			if (is_drive_device(dev)) {
+				cbmdos_chkout(x, dev);
+				set_c(0);
+				break;
+			}
 			break;
 	}
 
 	DFLTO = dev;
-	//	printf("%s:%d DFLTO: %d\n", __func__, __LINE__, DFLTO);
 }
 
 // CLRCHN - Close input and output channels
 void
-CLRCHN()
+CLRCHN(void)
 {
 	DFLTO = KERN_DEVICE_SCREEN;
 	DFLTN = KERN_DEVICE_KEYBOARD;
 }
 
+/* Optional inject buffer - filled by main before emulation starts */
+static const char  *inject_buf   = NULL;
+static int          inject_pos   = 0;
+static uint8_t     *inject_patch = NULL;  /* RAM bytes to restore on first read */
+static uint16_t     inject_patch_addr = 0;
+static int          inject_patch_len  = 0;
+static uint8_t     *inject_patch2 = NULL; /* optional second patch region */
+static uint16_t     inject_patch2_addr = 0;
+static int          inject_patch2_len  = 0;
+
+void channelio_inject(const char *s) {
+    inject_buf = s;
+    inject_pos = 0;
+}
+
+/* Optionally restore RAM bytes on first BASIN call (before RUN is typed).
+   Used to undo BASIC cold-start NEW which zeroes $0801/$0802. */
+void channelio_inject_patch(uint16_t addr, uint8_t *bytes, int len) {
+    inject_patch_addr = addr;
+    inject_patch      = bytes;
+    inject_patch_len  = len;
+}
+
+/* Second patch region - used to fix VARTAB ($002D/$002E) after cold start. */
+void channelio_inject_patch2(uint16_t addr, uint8_t *bytes, int len) {
+    inject_patch2_addr = addr;
+    inject_patch2      = bytes;
+    inject_patch2_len  = len;
+}
+
 // BASIN - Input character from channel
 void
-BASIN()
+BASIN(void)
 {
-//		printf("%s:%d DFLTN: %d\n", __func__, __LINE__, DFLTN);
 	switch (DFLTN) {
 		case KERN_DEVICE_KEYBOARD:
-			a = getchar(); // stdin
-			if (a == '\n') {
-				a = '\r';
+			if (inject_buf && inject_buf[inject_pos]) {
+				/* On first character, restore any RAM that cold-start wiped */
+				if (inject_pos == 0) {
+					if (inject_patch && inject_patch_len > 0) {
+						memcpy(&RAM[inject_patch_addr], inject_patch, inject_patch_len);
+						inject_patch = NULL;
+					}
+					if (inject_patch2 && inject_patch2_len > 0) {
+						memcpy(&RAM[inject_patch2_addr], inject_patch2, inject_patch2_len);
+						inject_patch2 = NULL;
+					}
+				}
+				a = (uint8_t)inject_buf[inject_pos++];
+				if (a == '\n') a = '\r';
+			} else {
+				a = getchar(); // stdin
+				if (a == '\n') {
+					a = '\r';
+				}
 			}
 			break;
 		case KERN_DEVICE_CASSETTE:
@@ -305,16 +289,12 @@ BASIN()
 		case KERN_DEVICE_PRINTERU7:
 			set_c(1);
 			return;
-		case KERN_DEVICE_DRIVEU8:
-		case KERN_DEVICE_DRIVEU9:
-		case KERN_DEVICE_DRIVEU10:
-		case KERN_DEVICE_DRIVEU11:
-		case KERN_DEVICE_DRIVEU12:
-		case KERN_DEVICE_DRIVEU13:
-		case KERN_DEVICE_DRIVEU14:
-		case KERN_DEVICE_DRIVEU15:
-			a = cbmdos_basin(DFLTN, &STATUS);
-			set_c(0);
+		default:
+			if (is_drive_device(DFLTN)) {
+				a = cbmdos_basin(DFLTN, &STATUS);
+				set_c(0);
+				break;
+			}
 			break;
 	}
 }
@@ -322,16 +302,8 @@ BASIN()
 
 // BSOUT - Output character to channel
 void
-BSOUT()
+BSOUT(void)
 {
-#if 0
-	int a1 = *(uint16_t *)(&RAM[0x0100+sp+1]) + 1;
-	int a2 = *(uint16_t *)(&RAM[0x0100+sp+3]) + 1;
-	int a3 = *(uint16_t *)(&RAM[0x0100+sp+5]) + 1;
-	int a4 = *(uint16_t *)(&RAM[0x0100+sp+7]) + 1;
-	printf("+BSOUT: '%c' -> %d @ %x,%x,%x,%x: ---", a, DFLTO, a1, a2, a3, a4);
-#endif
-//	printf("<%s:%d DFLTO: %d>", __func__, __LINE__, DFLTO);
 	switch (DFLTO) {
 		case KERN_DEVICE_KEYBOARD:
 			set_c(1);
@@ -346,41 +318,21 @@ BSOUT()
 			screen_bsout();
 			set_c(0);
 			break;
-		case KERN_DEVICE_PRINTERU4:
-			printer_bsout(4);
-			set_c(0);
-			return;
-		case KERN_DEVICE_PRINTERU5:
-			printer_bsout(5);
-			set_c(0);
-			return;
-		case KERN_DEVICE_PRINTERU6:
-			printer_bsout(6);
-			set_c(0);
-			return;
-		case KERN_DEVICE_PRINTERU7:
-			printer_bsout(7);
-			set_c(0);
-			return;
-		case KERN_DEVICE_DRIVEU8:
-		case KERN_DEVICE_DRIVEU9:
-		case KERN_DEVICE_DRIVEU10:
-		case KERN_DEVICE_DRIVEU11:
-		case KERN_DEVICE_DRIVEU12:
-		case KERN_DEVICE_DRIVEU13:
-		case KERN_DEVICE_DRIVEU14:
-		case KERN_DEVICE_DRIVEU15:
-			STATUS = cbmdos_bsout(DFLTO, a);
-			set_c(STATUS);
+		default:
+			if (is_printer_device(DFLTO)) {
+				printer_bsout(DFLTO);
+				set_c(0);
+			} else if (is_drive_device(DFLTO)) {
+				STATUS = cbmdos_bsout(DFLTO, a);
+				set_c(STATUS);
+			}
 			break;
 	}
-	//	printf("--- BSOUT: '%c' -> %d @ %x,%x,%x,%x\n", a, DFLTO, a1, a2, a3, a4);
-//	printf("</>");
 }
 
 // LOAD - Load RAM from a device
 void
-LOAD()
+LOAD(void)
 {
 	int error = KERN_ERR_NONE;
 
@@ -411,7 +363,6 @@ LOAD()
 	if (!SA) {
 		address = override_address;
 	}
-	//	printf("%04x\n", address);
 
 	do {
 		BASIN();
@@ -434,15 +385,13 @@ end:
 	}
 	//	for (int i = 0; i < 255; i++) {
 	//	 if (!(i & 15)) {
-	//		 printf("\n %04X  ", 0x0800+i);
 	//	 }
-	//	 printf("%02X ", RAM[0x0800+i]);
 	//	}
 }
 
 // SAVE - Save RAM to device
 void
-SAVE()
+SAVE(void)
 {
 	uint16_t address = RAM[a] | RAM[a + 1] << 8;
 	uint16_t end = x | y << 8;
@@ -489,12 +438,11 @@ SAVE()
 
 // CLALL - Close all channels and files
 void
-CLALL()
+CLALL(void)
 {
-//	printf("CLALL\n");
-	for (a = 0; a < sizeof(file_to_device)/sizeof(file_to_device[0]); a++) {
-		uint8_t dev = file_to_device[a];
-		if (dev != 0xFF) {
+	for (int lfn = 0; lfn < (int)(sizeof(file_to_device)/sizeof(file_to_device[0])); lfn++) {
+		if (file_to_device[lfn] != 0xFF) {
+			a = lfn;
 			CLOSE();
 		}
 	}

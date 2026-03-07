@@ -9,72 +9,71 @@
 #include "channelio.h"
 #include "c128.h"
 
-#define NYI() printf("Unsupported KERNAL call %s at PC=$%04X S=$%02X\n", __func__, pc, sp); exit(1);
 
 // Most of the C128 KERNAL interface additions are currently
 // unsupported.
 
 // SPIN_SPOUT - Setup fast serial ports for I/O
-void SPIN_SPOUT() { NYI(); }
+void SPIN_SPOUT(void) { NYI(); }
 
 // CLOSE_ALL - Close all files on a device
-void CLOSE_ALL() { NYI(); }
+void CLOSE_ALL(void) { NYI(); }
 
 // C64MODE - Reconfigure system as a C64
-void C64MODE() { NYI(); }
+void C64MODE(void) { NYI(); }
 
 // DMA_CALL - Send command to DMA device
-void DMA_CALL() { NYI(); }
+void DMA_CALL(void) { NYI(); }
 
 // BOOT_CALL - Boot load program from disk
-void BOOT_CALL() { NYI(); }
+void BOOT_CALL(void) { NYI(); }
 
 // PHOENIX - Init function cartridges
 void
-PHOENIX()
+PHOENIX(void)
 {
 	// do nothing
 }
 
 // LKUPLA - Search tables for given LA
-void LKUPLA() { NYI(); }
+void LKUPLA(void) { NYI(); }
 
 // LKUPSA - Search tables for given SA
-void LKUPSA() { NYI(); }
+void LKUPSA(void) { NYI(); }
 
 // SWAPPER - Switch between 40 and 80 columns
-void SWAPPER() { NYI(); }
+void SWAPPER(void) { NYI(); }
 
 // DLCHR - Init 80-col character RAM
-void DLCHR() { NYI(); }
+void DLCHR(void) { NYI(); }
 
 // PFKEY - Program a function key
-void PFKEY() { NYI(); }
+void PFKEY(void) { NYI(); }
 
 // SETBNK - Set bank for I/O operations
-void SETBNK() { NYI(); }
+void SETBNK(void) { NYI(); }
 
 // GETCFG - Lookup MMU data for given bank
-void GETCFG() { NYI(); }
+void GETCFG(void) { NYI(); }
 
 // JSRFAR - GOSUB in another bank
-void JSRFAR() { NYI(); }
+void JSRFAR(void) { NYI(); }
 
 // JMPFAR - GOTO another bank
-void JMPFAR() { NYI(); }
+void JMPFAR(void) { NYI(); }
 
 // INDFET - LDA (fetvec),Y from any bank
-void INDFET() { NYI(); }
+void INDFET(void) { NYI(); }
 
 // INDSTA - STA (stavec),Y to any bank
-void INDSTA() { NYI(); }
+void INDSTA(void) { NYI(); }
 
 // INDCMP - CMP (cmpvec),Y to any bank
-void INDCMP() { NYI(); }
+void INDCMP(void) { NYI(); }
 
 // PRIMM - Print immediate utility
 void
-PRIMM()
+PRIMM(void)
 {
 	uint16_t address = (RAM[0x100 + sp + 1] | (RAM[0x100 + sp + 2] << 8)) + 1;
 	while ((a = RAM[address++])) {

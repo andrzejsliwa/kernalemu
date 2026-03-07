@@ -8,18 +8,17 @@
 #include "glue.h"
 #include "vector.h"
 
-#define NYI() printf("Unsupported KERNAL call %s at PC=$%04X S=$%02X\n", __func__, pc, sp); exit(1);
 
 // RESTOR - Restore default system and interrupt vectors
 void
-RESTOR()
+RESTOR(void)
 {
 	// TODO
 }
 
 // VECTOR - Read/set vectored I/O
 void
-VECTOR()
+VECTOR(void)
 {
 	// TODO: Generic support for user vectors would be
 	// needed:

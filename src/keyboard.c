@@ -9,11 +9,10 @@
 #include "channelio.h"
 #include "keyboard.h"
 
-#define NYI() printf("Unsupported KERNAL call %s at PC=$%04X S=$%02X\n", __func__, pc, sp); exit(1);
 
 // SCNKEY - Scan keyboard
 void
-SCNKEY()
+SCNKEY(void)
 {
 	// This should only be called by custom interrupt handlers.
 	// do nothing
@@ -21,7 +20,7 @@ SCNKEY()
 
 // STOP - Scan stop key
 void
-STOP()
+STOP(void)
 {
 	// TODO: We don't support the STOP key
 	set_z(0);
@@ -29,7 +28,7 @@ STOP()
 
 // GETIN - Get a character
 void
-GETIN()
+GETIN(void)
 {
 	BASIN();
 }

@@ -26,6 +26,8 @@ You have to specify one or more programs. They have to be in PRG format, i.e. th
 * `-text`: assume PETSCII upper/lower; convert to ASCII
 * `-graphics`: assume PETSCII upper/graphics; do not convert (default)
 * `-columns <n>`: insert hard line breaks after <n> columns
+* `-drive8 <path>` through `-drive15 <path>`: map a CBM drive unit to a local directory (supports read, write, directory listing, and DOS commands S:, R:, C:, V, CD:, UI, UJ)
+* `-autorun`: inject `RUN` into the keyboard buffer after startup so a loaded BASIC program runs automatically; also restores BASIC program memory zeroed by the BASIC cold-start NEW routine
 
 ### Comments
 
@@ -207,6 +209,35 @@ The assembler sends the LST output to the printer, which you can find in the fil
 	
 	Want to restore
 	previously saved game?
+
+## Building
+
+    make              # Build the emulator
+    make install      # Install to /usr/local/bin (override with PREFIX=...)
+    make uninstall    # Remove installed binary
+    make clean        # Remove build artifacts
+    make help         # Show all targets and options
+
+## Testing
+
+A full test suite is in `examples/drive-tests/`. It requires `64tass` and `python3`.
+
+    make test         # Run all tests (assembly + BASIC)
+    make test-asm     # Assembly test: 7 drive tests, exits 0 on all pass
+    make test-basic   # BASIC V2 test: 7 drive tests, exits 0 on all pass
+
+The test directory can be overridden:
+
+    make test DRIVE_TESTS=path/to/drive-tests
+
+## Synthetic KERNAL Calls
+
+Two addresses in the trap zone are available as a portable exit mechanism for test programs. They are not present on any real CBM hardware.
+
+* `JSR $FF00` — exit the emulator with code 0 (success)
+* `JSR $FF01` — exit the emulator with code 1 (failure)
+
+From BASIC: `SYS 65280` (pass) or `SYS 65281` (fail).
 
 ## Credits
 

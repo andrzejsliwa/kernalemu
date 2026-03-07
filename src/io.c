@@ -11,7 +11,7 @@
 
 // IOBASE - Returns base address of I/O devices
 void
-IOBASE()
+IOBASE(void)
 {
 	uint16_t iobase;
 	bool fake_via_random_numbers = false;
@@ -61,7 +61,7 @@ IOBASE()
 
 // IOINIT - Initialize I/O devices
 void
-IOINIT()
+IOINIT(void)
 {
 	srand((unsigned int)time(NULL));
 }

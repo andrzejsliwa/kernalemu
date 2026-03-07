@@ -10,7 +10,7 @@
 
 // SETTIM - Set real time clock
 void
-SETTIM()
+SETTIM(void)
 {
 	unsigned long jiffies = y*65536 + x*256 + a;
 	unsigned long seconds = jiffies/60;
@@ -37,13 +37,16 @@ SETTIM()
 	tv.tv_sec = mktime(&bd);
 	tv.tv_usec = (jiffies % 60) * (1000000 / 60);
 
-	settimeofday(&tv, 0);
+	/* settimeofday() requires CAP_SYS_TIME on Linux 3.17+ and root on macOS.
+	   For normal users this will fail with EPERM - silently ignore since
+	   the TOD clock is non-critical for program execution. */
+	(void)settimeofday(&tv, NULL);
 #endif
 }
 
 // RDTIM - Read real time clock
 void
-RDTIM()
+RDTIM(void)
 {
 	unsigned long jiffies;
 #ifdef _WIN32
@@ -68,7 +71,7 @@ RDTIM()
 
 // UDTIM - Increment real time clock
 void
-UDTIM()
+UDTIM(void)
 {
 	// do nothing
 }

@@ -32,24 +32,23 @@ kernal_init()
 	cbmdos_init();
 }
 
-#define NYI() printf("Unsupported KERNAL call %s at PC=$%04X S=$%02X\n", __func__, pc, sp); exit(1);
 
 // PET BASIC commands
-static void BASIC_OPEN() { NYI(); }
-static void BASIC_CLOSE() { NYI(); }
-static void BASIC_LOAD() { NYI(); }
-static void BASIC_SAVE() { NYI(); }
-static void BASIC_VERIFY() { NYI(); }
-static void BASIC_SYS() { NYI(); }
+static void BASIC_OPEN(void) { NYI(); }
+static void BASIC_CLOSE(void) { NYI(); }
+static void BASIC_LOAD(void) { NYI(); }
+static void BASIC_SAVE(void) { NYI(); }
+static void BASIC_VERIFY(void) { NYI(); }
+static void BASIC_SYS(void) { NYI(); }
 
 // TED private
-static void DEFKEY() { NYI(); }
-static void PRINT() { NYI(); }
-static void MONITOR() { NYI(); }
-static void RESET() { NYI(); }
+static void DEFKEY(void) { NYI(); }
+static void PRINT(void) { NYI(); }
+static void MONITOR(void) { NYI(); }
+static void RESET(void) { NYI(); }
 
 // C65
-static void MONITOR_CALL() { NYI(); }
+static void MONITOR_CALL(void) { NYI(); }
 
 // The original KERNAL interface. This is the complete
 // set of calls supported PET machines with BASIC 1/2/3.
@@ -58,6 +57,10 @@ static bool
 kernal_dispatch_pet()
 {
 	switch(pc) {
+			/* Synthetic exit calls (not on real hardware):
+			   JSR $FF00 = exit(0) success, JSR $FF01 = exit(1) failure */
+		case 0xFF00:	exit(0);	break;
+		case 0xFF01:	exit(1);	break;
 			// channel I/O
 		case 0xFFC6:	CHKIN();	break;
 		case 0xFFC9:	CHKOUT();	break;
