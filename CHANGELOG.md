@@ -17,6 +17,7 @@
 
 ### Changed
 
+- **Keyboard input**: Terminal echo disabled and replaced with manual uppercase echo in `BASIN`; each keypress is immediately reflected on screen as the uppercase equivalent. Raw terminal mode (`ICANON=0`, `ECHO=0`, `VMIN=1`) is enabled on startup when stdin is a TTY, and the original terminal settings are restored on exit via `atexit`. Backspace erases the last character; Enter advances to a new line. Injected input (autorun) is unaffected.
 - **`cbmdos`**: Rewritten to support up to 8 drive units; file table expanded from 16 to 256 entries; filename buffers expanded to 256 bytes; `PATH_MAX` used throughout instead of hardcoded sizes
 - **`channelio`**: Drive and printer device handling consolidated into helper functions; keyboard injection API added (`channelio_inject`, `channelio_inject_patch`, `channelio_inject_patch2`)
 - **`glue.h`**: Now the single source for `KERN_DEVICE_*` constants, `NYI()` macro, and `is_drive_device()` / `is_printer_device()` helpers

@@ -3,8 +3,12 @@
 // All rights reserved. License: 2-clause BSD
 
 #include <sys/types.h>
+#include <ctype.h>
 #include <string.h>
 #include <stdio.h>
+#ifndef _WIN32
+#include <unistd.h>
+#endif
 #include "glue.h"
 #include "error.h"
 #include "cbmdos.h"
@@ -271,12 +275,30 @@ BASIN(void)
 						inject_patch2 = NULL;
 					}
 				}
-				a = (uint8_t)inject_buf[inject_pos++];
+				a = (uint8_t)toupper(inject_buf[inject_pos++]);
 				if (a == '\n') a = '\r';
 			} else {
-				a = getchar(); // stdin
-				if (a == '\n') {
+#ifdef _WIN32
+				int ch = getchar();
+#else
+				uint8_t buf = 0;
+				int ch = (read(STDIN_FILENO, &buf, 1) == 1) ? buf : -1;
+#endif
+				if (ch == '\n' || ch == '\r') {
 					a = '\r';
+#ifndef _WIN32
+					write(STDOUT_FILENO, "\r\n", 2);
+#endif
+				} else if (ch == 8 || ch == 127) {
+					a = 20; // PETSCII DEL
+#ifndef _WIN32
+					write(STDOUT_FILENO, "\b \b", 3);
+#endif
+				} else if (ch > 0) {
+					a = toupper(ch);
+#ifndef _WIN32
+					write(STDOUT_FILENO, &a, 1);
+#endif
 				}
 			}
 			break;

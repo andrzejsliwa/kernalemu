@@ -13,6 +13,7 @@
 #else
 #include <sys/time.h>
 #include <unistd.h>
+#include <termios.h>
 #endif
 #include "fake6502.h"
 #include "glue.h"
@@ -23,6 +24,29 @@
 
 machine_t machine;
 bool c64_has_external_rom;
+
+#ifndef _WIN32
+static struct termios orig_termios;
+static bool raw_mode_active = false;
+
+static void restore_terminal(void) {
+	if (raw_mode_active) {
+		tcsetattr(STDIN_FILENO, TCSAFLUSH, &orig_termios);
+	}
+}
+
+static void enable_raw_input(void) {
+	if (!isatty(STDIN_FILENO)) return;
+	if (tcgetattr(STDIN_FILENO, &orig_termios) != 0) return;
+	atexit(restore_terminal);
+	struct termios raw = orig_termios;
+	raw.c_lflag &= ~(ECHO | ICANON);
+	raw.c_cc[VMIN]  = 1;
+	raw.c_cc[VTIME] = 0;
+	tcsetattr(STDIN_FILENO, TCSAFLUSH, &raw);
+	raw_mode_active = true;
+}
+#endif
 
 static uint16_t
 parse_num(const char *s)
@@ -217,6 +241,9 @@ main(int argc, char **argv)
 
 	kernal_init();
 	screen_init(columns, charset_text);
+#ifndef _WIN32
+	enable_raw_input();
+#endif
 
 	if (autorun_cmd) {
 		channelio_inject(autorun_cmd);
